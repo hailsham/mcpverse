@@ -411,13 +411,16 @@ class Evaluator:
         """Get all reference answers"""
         logger.info("=> Starting getting reference answer")
         for i, row in self.df.iterrows():
-            if row.get('time-sensitive') != 'No':
-                continue
-            
             qid = row['question_id']
             ref_id = row.get('get_answer_id')
-            
+
             if not ref_id:
+                continue
+
+            # time-sensitive questions use tq* templates
+            if row.get('time-sensitive') == 'Yes':
+                ref_id = f"t{ref_id}"
+            elif row.get('time-sensitive') != 'No':
                 continue
             
             logger.info(f"=> Getting reference answer: {qid}")
@@ -429,6 +432,14 @@ class Evaluator:
                     self.dump_results('get_ref', i, qid, results)
             except Exception as e:
                 logger.error(f"===> Failed!! {qid}: {ref_id}/{e}")
+
+        # Filter out rows that failed to get reference answers
+        before = len(self.df)
+        self.df = self.df[self.df['answer'].notna()].reset_index(drop=True)
+        after = len(self.df)
+        if before != after:
+            logger.info(f"=> Filtered out {before - after} rows without reference answers, keeping {after}")
+            write_data(self.inout_path, self.df)
         logger.info("=>[Done] Getting reference answer")
     
     def get_target_tools(self) -> List[str]:

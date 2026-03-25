@@ -197,6 +197,14 @@ class MCPAgentRunner:
                 model_type='gpt-5',
                 model_config_dict=dict(max_completion_tokens=8 * 1024),
             )
+        elif self.model_name == 'Qwen2-5-72B-Instruct':
+            self.model = ModelFactory.create(
+                model_platform=ModelPlatformType.OPENAI_COMPATIBLE_MODEL,
+                model_type='Qwen2.5-72B-Instruct',
+                url='http://10.210.1.23:5162/v1',
+                api_key='EMPTY',
+                model_config_dict=dict(temperature=0.0, max_tokens=32000),
+            )
         else:
             raise ValueError(f"Model {self.model_name} not supported")
     
@@ -324,7 +332,9 @@ You are provided with function signatures within <tools></tools> XML tags:
             await self.mcp_toolkit.disconnect()
 
     async def run_task(self, agent, task):
-        response = await agent.astep(task)
+        result = await agent.astep(task)
+        # Handle case where astep() returns (ChatAgentResponse, trace_id) tuple
+        response = result[0] if isinstance(result, tuple) else result
         if response.terminated:
             output = {
                 'answer': response.info['termination_reasons'][0],
@@ -342,7 +352,9 @@ You are provided with function signatures within <tools></tools> XML tags:
         return output
 
     def run_task_sync(self, agent, task):
-        response = agent.step(task)
+        result = agent.step(task)
+        # Handle case where step() returns (ChatAgentResponse, trace_id) tuple
+        response = result[0] if isinstance(result, tuple) else result
         if response.terminated:
             reason = response.info['termination_reasons'][0]
             logger.info(f"=> Terminated: {reason}")

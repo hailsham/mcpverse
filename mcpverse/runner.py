@@ -584,7 +584,7 @@ class Evaluator:
         df[score_col] = pd.to_numeric(df[score_col], errors="coerce")
         overall_mean = df[score_col].mean()
         by_complexity = df.groupby(comp_col, dropna=False)[score_col].mean().reset_index().rename(columns={score_col: "avg_score"}).sort_values("avg_score", ascending=False)
-        print(f"Overall mean: {overall_mean:.4f}")
+        print(f"{self.model_name}:{self.infer_mode}: {overall_mean:.4f}")
         print(by_complexity.to_string(index=False))
 
 
